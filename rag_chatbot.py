@@ -1,6 +1,7 @@
 import os
 import time
 import pandas as pd
+import streamlit as st
 
 from dotenv import load_dotenv
 from google import genai
@@ -8,24 +9,59 @@ from pinecone import Pinecone
 
 
 # ============================================================
-# 1. LOAD ENVIRONMENT VARIABLES
+# 1. LOAD ENVIRONMENT VARIABLES / STREAMLIT SECRETS
 # ============================================================
 
 load_dotenv()
 
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
+
+def get_secret(name):
+    """
+    Get a secret from:
+    1. Environment variables (local .env)
+    2. Streamlit secrets (Streamlit Cloud)
+    """
+
+    # Local environment
+    value = os.getenv(name)
+
+    if value:
+        return value
+
+    # Streamlit Cloud
+    try:
+        value = st.secrets.get(name)
+
+        if value:
+            return value
+
+    except Exception:
+        pass
+
+    return None
+
+
+GEMINI_API_KEY = get_secret(
+    "GEMINI_API_KEY"
+)
+
+PINECONE_API_KEY = get_secret(
+    "PINECONE_API_KEY"
+)
+
 
 if not GEMINI_API_KEY:
     raise ValueError(
-        "GEMINI_API_KEY was not found in .env"
+        "GEMINI_API_KEY was not found. "
+        "Add it to Streamlit Secrets."
     )
+
 
 if not PINECONE_API_KEY:
     raise ValueError(
-        "PINECONE_API_KEY was not found in .env"
+        "PINECONE_API_KEY was not found. "
+        "Add it to Streamlit Secrets."
     )
-
 
 # ============================================================
 # 2. CONFIGURATION
