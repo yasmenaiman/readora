@@ -14,20 +14,44 @@ from rag_chatbot import rag_query
 
 
 # ============================================================
-# 1. ENVIRONMENT VARIABLES
+# 1. ENVIRONMENT VARIABLES / STREAMLIT SECRETS
 # ============================================================
 
 load_dotenv()
 
-GEMINI_API_KEY = os.getenv(
+
+def get_secret(name):
+    """
+    Get a secret from local .env or Streamlit Cloud Secrets.
+    """
+
+    # Local environment (.env)
+    value = os.getenv(name)
+
+    if value:
+        return value
+
+    # Streamlit Cloud
+    try:
+        value = st.secrets.get(name)
+
+        if value:
+            return value
+
+    except Exception:
+        pass
+
+    return None
+
+
+GEMINI_API_KEY = get_secret(
     "GEMINI_API_KEY"
 )
 
 if not GEMINI_API_KEY:
     raise ValueError(
-        "GEMINI_API_KEY was not found in .env"
+        "GEMINI_API_KEY was not found."
     )
-
 
 # ============================================================
 # 2. CONFIGURATION
