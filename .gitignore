@@ -1,0 +1,40 @@
+.env
+.venv/
+__pycache__/
+*.pyc
+
+*.pkl
+*.log
+
+# Evaluation / development files
+clean_rag_data2.py
+create_documents3.py
+create_evaluation_candidates.py
+evaluate_rag.py
+evaluate_semantic_search.py
+evaluation_queries.json
+index_full_dataset.py
+label_evaluation.py
+read data1
+review_evaluation_labels.py
+semantic_search_test.py
+test_100_gemini.py
+test_pinecone_100.py
+
+# Evaluation outputs
+data/evaluation_candidates.csv
+data/evaluation_candidates_labeled.csv
+data/evaluation_labels_checkpoint.csv
+data/indexing_checkpoint.json
+data/semantic_search_evaluation_results.csv
+data/semantic_search_evaluation_summary.txt
+data/test_100_embeddings.pkl
+
+# Other local datasets not required by the app
+data/rag_books.csv
+data/rag_books_final.csv
+
+# Screenshots
+*.png
+*.jpg
+*.jpeg
