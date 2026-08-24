@@ -82,6 +82,18 @@ LOGO_PATH = (
     / "readora_logo.png"
 )
 
+CHATBOT_AVATAR_PATH = (
+    BASE_DIR
+    / "assets"
+    / "chatbot_avatar.png"
+)
+
+USER_AVATAR_PATH = (
+    BASE_DIR
+    / "assets"
+    / "user_avatar.png"
+)
+
 
 # ============================================================
 # 4. GEMINI CLIENT
@@ -111,6 +123,10 @@ st.set_page_config(
 st.markdown(
     f"""
 <style>
+
+/* ============================================================
+   GLOBAL
+   ============================================================ */
 
 html,
 body,
@@ -181,23 +197,23 @@ footer {{
 }}
 
 .readora-logo {{
-    width: 78px;
-    height: 78px;
+    width: 88px;
+    height: 88px;
 
     object-fit: contain;
 
     flex-shrink: 0;
 
-    border-radius: 16px;
+    border-radius: 18px;
 
     background: rgba(255,255,255,0.08);
 
-    padding: 6px;
+    padding: 5px;
 }}
 
 .readora-logo-fallback {{
-    width: 78px;
-    height: 78px;
+    width: 88px;
+    height: 88px;
 
     display: flex;
 
@@ -206,11 +222,11 @@ footer {{
 
     flex-shrink: 0;
 
-    border-radius: 16px;
+    border-radius: 18px;
 
     background: {GOLD};
 
-    font-size: 2.2rem;
+    font-size: 2.5rem;
 }}
 
 .readora-brand-text {{
@@ -290,12 +306,23 @@ footer {{
 [data-testid="stChatMessage"] {{
     background: transparent;
 
-    padding-top: 0.35rem;
-    padding-bottom: 0.35rem;
+    padding-top: 0.4rem;
+    padding-bottom: 0.4rem;
 }}
 
 [data-testid="stChatMessageContent"] {{
     border-radius: 18px;
+}}
+
+
+/* ============================================================
+   CHAT AVATARS
+   ============================================================ */
+
+[data-testid="stChatMessageAvatarUser"] img,
+[data-testid="stChatMessageAvatarAssistant"] img {{
+    object-fit: cover;
+    border-radius: 50%;
 }}
 
 
@@ -389,6 +416,29 @@ footer {{
     background: {BURGUNDY};
 
     border-radius: 12px;
+}}
+
+
+/* ============================================================
+   SMALL SCREEN
+   ============================================================ */
+
+@media (max-width: 600px) {{
+
+    .readora-logo,
+    .readora-logo-fallback {{
+        width: 64px;
+        height: 64px;
+    }}
+
+    .readora-title {{
+        font-size: 1.55rem;
+    }}
+
+    .readora-tagline {{
+        font-size: 0.78rem;
+    }}
+
 }}
 
 </style>
@@ -605,7 +655,34 @@ User:
 
 
 # ============================================================
-# 10. IMAGE URL CLEANING
+# 10. AVATAR HELPERS
+# ============================================================
+
+def get_chatbot_avatar():
+
+    if CHATBOT_AVATAR_PATH.exists():
+        return str(CHATBOT_AVATAR_PATH)
+
+    if LOGO_PATH.exists():
+        return str(LOGO_PATH)
+
+    return None
+
+
+def get_user_avatar():
+
+    if USER_AVATAR_PATH.exists():
+        return str(USER_AVATAR_PATH)
+
+    return None
+
+
+CHATBOT_AVATAR = get_chatbot_avatar()
+USER_AVATAR = get_user_avatar()
+
+
+# ============================================================
+# 11. IMAGE URL CLEANING
 # ============================================================
 
 def clean_image_url(url):
@@ -643,7 +720,7 @@ def clean_image_url(url):
 
 
 # ============================================================
-# 11. DOWNLOAD IMAGE
+# 12. DOWNLOAD BOOK IMAGE
 # ============================================================
 
 @st.cache_data(
@@ -708,7 +785,7 @@ def load_book_image(image_url):
 
 
 # ============================================================
-# 12. DISPLAY IMAGE
+# 13. DISPLAY BOOK IMAGE
 # ============================================================
 
 def display_book_image(image_url):
@@ -741,15 +818,10 @@ def display_book_image(image_url):
             display:flex;
             align-items:center;
             justify-content:center;
-
             background:{BEIGE};
-
             border-radius:16px;
-
             border:1px solid {LIGHT_BORDER};
-
             color:{BURGUNDY};
-
             font-size:2.8rem;
         ">
             📖
@@ -760,7 +832,7 @@ def display_book_image(image_url):
 
 
 # ============================================================
-# 13. DISPLAY BOOK CARD
+# 14. DISPLAY BOOK CARD
 # ============================================================
 
 def display_book_card(book):
@@ -870,7 +942,7 @@ def display_book_card(book):
 
 
 # ============================================================
-# 14. READORA HEADER
+# 15. HEADER
 # ============================================================
 
 def get_logo_base64():
@@ -965,7 +1037,7 @@ else:
 
 
 # ============================================================
-# 15. WELCOME
+# 16. WELCOME
 # ============================================================
 
 if not st.session_state.messages:
@@ -989,16 +1061,26 @@ if not st.session_state.messages:
 
 
 # ============================================================
-# 16. CHAT HISTORY
+# 17. CHAT HISTORY
 # ============================================================
 
 for message in st.session_state.messages:
 
-    avatar = (
-        "📚"
-        if message["role"] == "assistant"
-        else "👤"
-    )
+    if message["role"] == "assistant":
+
+        avatar = (
+            CHATBOT_AVATAR
+            if CHATBOT_AVATAR
+            else "📚"
+        )
+
+    else:
+
+        avatar = (
+            USER_AVATAR
+            if USER_AVATAR
+            else "👤"
+        )
 
     with st.chat_message(
         message["role"],
@@ -1011,7 +1093,7 @@ for message in st.session_state.messages:
 
 
 # ============================================================
-# 17. CHAT INPUT
+# 18. CHAT INPUT
 # ============================================================
 
 user_query = st.chat_input(
@@ -1020,12 +1102,16 @@ user_query = st.chat_input(
 
 
 # ============================================================
-# 18. HANDLE USER MESSAGE
+# 19. HANDLE USER MESSAGE
 # ============================================================
 
 if user_query:
 
     user_query = user_query.strip()
+
+    # --------------------------------------------------------
+    # Save user message
+    # --------------------------------------------------------
 
     st.session_state.messages.append(
         {
@@ -1034,21 +1120,43 @@ if user_query:
         }
     )
 
+
+    # --------------------------------------------------------
+    # User message
+    # --------------------------------------------------------
+
     with st.chat_message(
         "user",
-        avatar="👤"
+        avatar=(
+            USER_AVATAR
+            if USER_AVATAR
+            else "👤"
+        )
     ):
 
         st.markdown(
             user_query
         )
 
+
+    # --------------------------------------------------------
+    # Assistant response
+    # --------------------------------------------------------
+
     with st.chat_message(
         "assistant",
-        avatar="📚"
+        avatar=(
+            CHATBOT_AVATAR
+            if CHATBOT_AVATAR
+            else "📚"
+        )
     ):
 
         try:
+
+            # =================================================
+            # INTENT
+            # =================================================
 
             with st.spinner(
                 "Understanding your request..."
@@ -1114,24 +1222,36 @@ if user_query:
                     []
                 )
 
+
+                # ------------------------------------------------
+                # Answer
+                # ------------------------------------------------
+
                 if answer:
 
                     st.markdown(
                         answer
                     )
 
+
+                # ------------------------------------------------
+                # Recommendations
+                # ------------------------------------------------
+
                 if books:
 
                     st.markdown(
                         """
                         <div class="recommendation-title">
-                            📚 Recommended Books
+                             Recommended Books
                         </div>
                         """,
                         unsafe_allow_html=True
                     )
 
+
                     # Three books per row
+
                     for start in range(
                         0,
                         len(books),
@@ -1181,6 +1301,10 @@ if user_query:
                 "processing your request."
             )
 
+
+        # --------------------------------------------------------
+        # Save assistant response
+        # --------------------------------------------------------
 
         st.session_state.messages.append(
             {
