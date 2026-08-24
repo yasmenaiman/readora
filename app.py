@@ -98,7 +98,7 @@ intent_client = genai.Client(
 
 st.set_page_config(
     page_title="READORA",
-    page_icon="📚",
+    page_icon=str(LOGO_PATH),
     layout="centered",
     initial_sidebar_state="collapsed"
 )
