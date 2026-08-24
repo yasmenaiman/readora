@@ -1,6 +1,8 @@
+import os
 import json
 import html
-import os
+import base64
+from pathlib import Path
 from io import BytesIO
 
 import requests
@@ -22,16 +24,15 @@ load_dotenv()
 
 def get_secret(name):
     """
-    Get a secret from local .env or Streamlit Cloud Secrets.
+    Read a secret from local .env first,
+    then from Streamlit Cloud Secrets.
     """
 
-    # Local environment (.env)
     value = os.getenv(name)
 
     if value:
         return value
 
-    # Streamlit Cloud
     try:
         value = st.secrets.get(name)
 
@@ -53,15 +54,37 @@ if not GEMINI_API_KEY:
         "GEMINI_API_KEY was not found."
     )
 
+
 # ============================================================
 # 2. CONFIGURATION
 # ============================================================
 
 GENERATION_MODEL = "gemini-3.6-flash"
 
+BURGUNDY = "#4A1F2D"
+BEIGE = "#E8DCC4"
+GOLD = "#C99A2E"
+CREAM = "#FAF7F0"
+WHITE = "#FFFFFF"
+DARK = "#2B2024"
+LIGHT_BORDER = "#E6DDD2"
+
 
 # ============================================================
-# 3. INITIALIZE GEMINI CLIENT
+# 3. PATHS
+# ============================================================
+
+BASE_DIR = Path(__file__).resolve().parent
+
+LOGO_PATH = (
+    BASE_DIR
+    / "assets"
+    / "readora_logo.png"
+)
+
+
+# ============================================================
+# 4. GEMINI CLIENT
 # ============================================================
 
 intent_client = genai.Client(
@@ -70,154 +93,381 @@ intent_client = genai.Client(
 
 
 # ============================================================
-# 4. PAGE CONFIGURATION
+# 5. PAGE CONFIGURATION
 # ============================================================
 
 st.set_page_config(
     page_title="READORA",
     page_icon="📚",
-    layout="wide",
+    layout="centered",
     initial_sidebar_state="collapsed"
 )
 
 
 # ============================================================
-# 5. CUSTOM CSS
+# 6. CUSTOM CSS
 # ============================================================
 
 st.markdown(
-    """
-    <style>
+    f"""
+<style>
 
-    .readora-header {
-        text-align: center;
-        padding: 1.5rem 0 1rem 0;
-    }
+html,
+body,
+[data-testid="stAppViewContainer"] {{
+    background: {CREAM};
+}}
 
-    .readora-title {
-        font-size: 3rem;
-        font-weight: 700;
-        margin-bottom: 0.2rem;
-    }
+[data-testid="stAppViewContainer"] {{
+    background: {CREAM};
+}}
 
-    .readora-subtitle {
-        font-size: 1.1rem;
-        opacity: 0.7;
-        margin-bottom: 1rem;
-    }
+[data-testid="stHeader"] {{
+    background: transparent;
+}}
 
-    .book-title {
-        font-size: 1.05rem;
-        font-weight: 700;
-        line-height: 1.35;
-        margin-top: 0.6rem;
-    }
+.block-container {{
+    max-width: 900px;
+    padding-top: 1rem;
+    padding-bottom: 2rem;
+}}
 
-    .book-author {
-        font-size: 0.9rem;
-        opacity: 0.7;
-        margin-top: 0.2rem;
-    }
 
-    .book-rating {
-        font-weight: 600;
-        margin-top: 0.4rem;
-    }
+/* ============================================================
+   HIDE STREAMLIT DEFAULT ELEMENTS
+   ============================================================ */
 
-    .book-cover-placeholder {
-        height: 300px;
-        width: 100%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 12px;
-        border: 1px solid rgba(128, 128, 128, 0.25);
-        font-size: 3rem;
-        background: rgba(128, 128, 128, 0.06);
-    }
+#MainMenu {{
+    visibility: hidden;
+}}
 
-    </style>
-    """,
+footer {{
+    visibility: hidden;
+}}
+
+[data-testid="stToolbar"] {{
+    visibility: hidden;
+}}
+
+
+/* ============================================================
+   READORA HEADER
+   ============================================================ */
+
+.readora-header {{
+    background: linear-gradient(
+        135deg,
+        {BURGUNDY} 0%,
+        #5B2838 100%
+    );
+
+    border-radius: 22px;
+
+    padding: 1.2rem 1.4rem;
+
+    margin-bottom: 1rem;
+
+    box-shadow:
+        0 8px 24px
+        rgba(74, 31, 45, 0.18);
+}}
+
+.readora-brand {{
+    display: flex;
+
+    align-items: center;
+
+    gap: 1rem;
+}}
+
+.readora-logo {{
+    width: 78px;
+    height: 78px;
+
+    object-fit: contain;
+
+    flex-shrink: 0;
+
+    border-radius: 16px;
+
+    background: rgba(255,255,255,0.08);
+
+    padding: 6px;
+}}
+
+.readora-logo-fallback {{
+    width: 78px;
+    height: 78px;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    flex-shrink: 0;
+
+    border-radius: 16px;
+
+    background: {GOLD};
+
+    font-size: 2.2rem;
+}}
+
+.readora-brand-text {{
+    display: flex;
+
+    flex-direction: column;
+
+    justify-content: center;
+}}
+
+.readora-title {{
+    color: {WHITE};
+
+    font-size: 2rem;
+
+    font-weight: 800;
+
+    line-height: 1.1;
+
+    letter-spacing: 0.02em;
+}}
+
+.readora-tagline {{
+    color: rgba(255,255,255,0.82);
+
+    font-size: 0.88rem;
+
+    margin-top: 0.35rem;
+}}
+
+
+/* ============================================================
+   WELCOME CARD
+   ============================================================ */
+
+.welcome-card {{
+    background: {WHITE};
+
+    border: 1px solid {LIGHT_BORDER};
+
+    border-left: 4px solid {GOLD};
+
+    border-radius: 16px;
+
+    padding: 1rem 1.15rem;
+
+    margin-bottom: 1rem;
+
+    box-shadow:
+        0 4px 16px
+        rgba(74, 31, 45, 0.06);
+}}
+
+.welcome-title {{
+    color: {BURGUNDY};
+
+    font-size: 1.08rem;
+
+    font-weight: 750;
+
+    margin-bottom: 0.3rem;
+}}
+
+.welcome-text {{
+    color: {DARK};
+
+    font-size: 0.9rem;
+
+    line-height: 1.55;
+}}
+
+
+/* ============================================================
+   CHAT
+   ============================================================ */
+
+[data-testid="stChatMessage"] {{
+    background: transparent;
+
+    padding-top: 0.35rem;
+    padding-bottom: 0.35rem;
+}}
+
+[data-testid="stChatMessageContent"] {{
+    border-radius: 18px;
+}}
+
+
+/* ============================================================
+   BOOK INFO
+   ============================================================ */
+
+.book-info {{
+    padding-top: 0.35rem;
+}}
+
+.book-title {{
+    color: {BURGUNDY};
+
+    font-size: 1rem;
+
+    font-weight: 750;
+
+    line-height: 1.35;
+
+    margin-bottom: 0.18rem;
+}}
+
+.book-author {{
+    color: #76666B;
+
+    font-size: 0.86rem;
+
+    margin-bottom: 0.35rem;
+}}
+
+.book-rating {{
+    color: {GOLD};
+
+    font-size: 0.88rem;
+
+    font-weight: 700;
+
+    margin-bottom: 0.3rem;
+}}
+
+.book-genres {{
+    color: #6B5C61;
+
+    font-size: 0.75rem;
+
+    line-height: 1.45;
+}}
+
+
+/* ============================================================
+   RECOMMENDATION TITLE
+   ============================================================ */
+
+.recommendation-title {{
+    color: {BURGUNDY};
+
+    font-size: 1.15rem;
+
+    font-weight: 750;
+
+    margin-top: 1rem;
+
+    margin-bottom: 0.75rem;
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 0.4rem;
+}}
+
+
+/* ============================================================
+   CHAT INPUT
+   ============================================================ */
+
+[data-testid="stChatInput"] {{
+    border: 1px solid {LIGHT_BORDER};
+
+    border-radius: 18px;
+
+    background: {WHITE};
+}}
+
+[data-testid="stChatInput"] textarea {{
+    color: {DARK};
+}}
+
+[data-testid="stChatInput"] button {{
+    background: {BURGUNDY};
+
+    border-radius: 12px;
+}}
+
+</style>
+""",
     unsafe_allow_html=True
 )
 
 
 # ============================================================
-# 6. SESSION STATE
+# 7. SESSION STATE
 # ============================================================
 
 if "messages" not in st.session_state:
-
     st.session_state.messages = []
 
 
 # ============================================================
-# 7. INTENT CLASSIFICATION
+# 8. INTENT CLASSIFICATION
 # ============================================================
 
 def classify_intent(user_message):
-    """
-    Gemini determines the user's intent.
-
-    The application does not manually search for words
-    such as 'hello', 'hi', 'اهلا', etc.
-    """
 
     prompt = f"""
-You are the intent router for READORA, an intelligent
-book recommendation assistant.
+You are the intent router for READORA,
+an intelligent book recommendation assistant.
 
-Classify the user's message into EXACTLY ONE of these intents:
+Classify the user's message into EXACTLY ONE intent.
 
 1. greeting
-   The user is greeting, welcoming, thanking, or starting
-   a conversation without requesting book information.
+The user is greeting, welcoming, thanking,
+or starting a conversation without asking
+for books.
 
 2. book_recommendation
-   The user wants book recommendations, suggestions,
-   discovery, or help choosing what to read.
+The user wants book recommendations,
+suggestions, discovery, or help choosing
+what to read.
 
 3. book_information
-   The user asks about a specific book, author, genre,
-   plot, rating, publication year, or other book-related
-   information.
+The user asks about a specific book,
+author, genre, plot, rating, publication,
+or other book-related information.
 
 4. general_conversation
-   The user is talking casually and does not need book retrieval.
+The user is talking casually without
+requesting book retrieval.
 
 5. other
-   Anything that does not fit the categories above.
+Anything else.
 
 Examples:
 
-hello
-hi
-hey
-اهلا
-أهلاً
-مرحبا
-السلام عليكم
-شكرا
-thank you
-
-=> greeting
+"hello" -> greeting
+"hi" -> greeting
+"اهلا" -> greeting
+"أهلاً" -> greeting
+"مرحبا" -> greeting
+"السلام عليكم" -> greeting
+"شكرا" -> greeting
 
 "I want a fantasy book about magic"
-=> book_recommendation
+-> book_recommendation
 
 "Recommend a mystery novel"
-=> book_recommendation
+-> book_recommendation
+
+"I need a romantic story"
+-> book_recommendation
 
 "What is The Changeling Sea about?"
-=> book_information
+-> book_information
 
 "Who wrote Harry Potter?"
-=> book_information
+-> book_information
 
 "How are you?"
-=> general_conversation
+-> general_conversation
 
-Return ONLY JSON in this exact structure:
+Return ONLY JSON:
 
 {{
     "intent": "greeting"
@@ -278,72 +528,67 @@ User message:
         if intent in valid_intents:
             return intent
 
-    except (
-        json.JSONDecodeError,
-        AttributeError,
-        TypeError
-    ):
+    except Exception:
         pass
 
     return "other"
 
 
 # ============================================================
-# 8. GENERATE NON-RETRIEVAL RESPONSE
+# 9. NON-RETRIEVAL RESPONSE
 # ============================================================
 
 def generate_non_retrieval_response(
     user_message,
     intent
 ):
-    """
-    Generate a natural response when Pinecone retrieval
-    is not required.
-    """
 
     if intent == "greeting":
 
         prompt = f"""
-You are READORA, a friendly book recommendation assistant.
+You are READORA, a warm and elegant book
+recommendation assistant.
 
 The user is simply greeting you.
 
-Reply naturally and briefly.
+Reply briefly and naturally.
 Do NOT recommend books yet.
-Invite the user to tell you what kind of book they are
-looking for.
 
-User message:
+Invite the user to tell you what they
+would like to read.
+
+User:
 {user_message}
-""".strip()
+"""
 
     elif intent == "general_conversation":
 
         prompt = f"""
-You are READORA, a friendly book recommendation assistant.
+You are READORA, a friendly book assistant.
 
-Reply naturally to the user's casual conversation.
+Respond naturally to the user's casual
+message.
 
-Do not invent book recommendations unless the user asks
-for them.
+Do not recommend books unless the user
+asks for them.
 
-User message:
+User:
 {user_message}
-""".strip()
+"""
 
     else:
 
         prompt = f"""
-You are READORA, a book recommendation assistant.
+You are READORA.
 
-The user's message does not contain enough information
-to perform book retrieval.
+The user has not provided enough information
+for a useful book search.
 
-Reply naturally and ask for clarification when useful.
+Reply briefly and naturally.
 
-User message:
+User:
 {user_message}
-""".strip()
+"""
 
     response = intent_client.models.generate_content(
         model=GENERATION_MODEL,
@@ -354,26 +599,16 @@ User message:
         return response.text.strip()
 
     return (
-        "Hello! 👋 I'm READORA. "
+        "Welcome to READORA! 📚 "
         "Tell me what kind of book you're looking for."
     )
 
 
 # ============================================================
-# 9. CLEAN IMAGE URL
+# 10. IMAGE URL CLEANING
 # ============================================================
 
 def clean_image_url(url):
-    """
-    Convert possible Markdown image/link format into
-    a direct URL.
-
-    Example:
-    [https://example.com/a.jpg](https://example.com/a.jpg)
-
-    becomes:
-    https://example.com/a.jpg
-    """
 
     if url is None:
         return ""
@@ -389,10 +624,6 @@ def clean_image_url(url):
         "null"
     }:
         return ""
-
-    # --------------------------------------------------------
-    # Markdown link
-    # --------------------------------------------------------
 
     if url.startswith("["):
 
@@ -412,17 +643,14 @@ def clean_image_url(url):
 
 
 # ============================================================
-# 10. LOAD IMAGE
+# 11. DOWNLOAD IMAGE
 # ============================================================
 
+@st.cache_data(
+    show_spinner=False,
+    ttl=86400
+)
 def load_book_image(image_url):
-    """
-    Download the image from the external source and return
-    the bytes as BytesIO so Streamlit can display it.
-
-    Returns:
-        BytesIO | None
-    """
 
     image_url = clean_image_url(
         image_url
@@ -448,11 +676,7 @@ def load_book_image(image_url):
                     "AppleWebKit/537.36 "
                     "(KHTML, like Gecko) "
                     "Chrome/151.0 Safari/537.36"
-                ),
-                "Accept": (
-                    "image/avif,image/webp,image/apng,"
-                    "image/svg+xml,image/*,*/*;q=0.8"
-                ),
+                )
             }
         )
 
@@ -463,21 +687,17 @@ def load_book_image(image_url):
             ""
         ).lower()
 
-        # Make sure the response is actually an image.
         if not content_type.startswith(
             "image/"
         ):
             return None
 
-        return BytesIO(
-            response.content
-        )
+        return response.content
 
     except Exception as e:
 
         print(
-            f"Image loading failed: "
-            f"{image_url}"
+            f"Image loading failed: {image_url}"
         )
 
         print(
@@ -488,7 +708,7 @@ def load_book_image(image_url):
 
 
 # ============================================================
-# 11. DISPLAY IMAGE
+# 12. DISPLAY IMAGE
 # ============================================================
 
 def display_book_image(image_url):
@@ -497,12 +717,12 @@ def display_book_image(image_url):
         image_url
     )
 
-    if image_data is not None:
+    if image_data:
 
         try:
 
             st.image(
-                image_data,
+                BytesIO(image_data),
                 use_container_width=True
             )
 
@@ -511,18 +731,27 @@ def display_book_image(image_url):
         except Exception as e:
 
             print(
-                f"Streamlit image display failed: "
-                f"{e}"
+                f"Image display error: {e}"
             )
 
-
-    # --------------------------------------------------------
-    # Fallback
-    # --------------------------------------------------------
-
     st.markdown(
-        """
-        <div class="book-cover-placeholder">
+        f"""
+        <div style="
+            height:260px;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+
+            background:{BEIGE};
+
+            border-radius:16px;
+
+            border:1px solid {LIGHT_BORDER};
+
+            color:{BURGUNDY};
+
+            font-size:2.8rem;
+        ">
             📖
         </div>
         """,
@@ -531,23 +760,42 @@ def display_book_image(image_url):
 
 
 # ============================================================
-# 12. DISPLAY BOOK CARD
+# 13. DISPLAY BOOK CARD
 # ============================================================
 
 def display_book_card(book):
 
-    title = str(
-        book.get(
-            "title",
-            "Unknown Title"
+    title = html.escape(
+        str(
+            book.get(
+                "title",
+                "Unknown Title"
+            )
         )
     )
 
-    author = str(
-        book.get(
-            "author_name",
-            "Unknown Author"
+    author = html.escape(
+        str(
+            book.get(
+                "author_name",
+                "Unknown Author"
+            )
         )
+    )
+
+    genres = html.escape(
+        str(
+            book.get(
+                "genres",
+                ""
+            )
+            or ""
+        )
+    )
+
+    rating = book.get(
+        "average_rating",
+        ""
     )
 
     image_url = clean_image_url(
@@ -557,59 +805,26 @@ def display_book_card(book):
         )
     )
 
-    rating = book.get(
-        "average_rating",
-        ""
-    )
-
-    genres = str(
-        book.get(
-            "genres",
-            ""
-        ) or ""
-    )
-
-
-    # --------------------------------------------------------
-    # Image
-    # --------------------------------------------------------
-
     display_book_image(
         image_url
     )
 
-
-    # --------------------------------------------------------
-    # Title
-    # --------------------------------------------------------
-
     st.markdown(
         f"""
-        <div class="book-title">
-            {html.escape(title)}
+        <div class="book-info">
+
+            <div class="book-title">
+                {title}
+            </div>
+
+            <div class="book-author">
+                by {author}
+            </div>
+
         </div>
         """,
         unsafe_allow_html=True
     )
-
-
-    # --------------------------------------------------------
-    # Author
-    # --------------------------------------------------------
-
-    st.markdown(
-        f"""
-        <div class="book-author">
-            by {html.escape(author)}
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-
-    # --------------------------------------------------------
-    # Rating
-    # --------------------------------------------------------
 
     if (
         rating is not None
@@ -642,81 +857,152 @@ def display_book_card(book):
         ):
             pass
 
-
-    # --------------------------------------------------------
-    # Genres
-    # --------------------------------------------------------
-
     if genres:
 
-        st.caption(
-            genres
+        st.markdown(
+            f"""
+            <div class="book-genres">
+                {genres}
+            </div>
+            """,
+            unsafe_allow_html=True
         )
 
 
 # ============================================================
-# 13. HEADER
+# 14. READORA HEADER
 # ============================================================
 
-st.markdown(
-    """
-    <div class="readora-header">
+def get_logo_base64():
 
-        <div class="readora-title">
-            📚 READORA
+    if not LOGO_PATH.exists():
+        return None
+
+    try:
+
+        with open(
+            LOGO_PATH,
+            "rb"
+        ) as f:
+
+            return base64.b64encode(
+                f.read()
+            ).decode("utf-8")
+
+    except Exception as e:
+
+        print(
+            f"Logo loading failed: {e}"
+        )
+
+        return None
+
+
+logo_base64 = get_logo_base64()
+
+
+if logo_base64:
+
+    st.html(
+        f"""
+        <div class="readora-header">
+
+            <div class="readora-brand">
+
+                <img
+                    src="data:image/png;base64,{logo_base64}"
+                    class="readora-logo"
+                    alt="READORA logo"
+                >
+
+                <div class="readora-brand-text">
+
+                    <div class="readora-title">
+                        READORA
+                    </div>
+
+                    <div class="readora-tagline">
+                        Your Intelligent Book Assistant
+                    </div>
+
+                </div>
+
+            </div>
+
         </div>
+        """
+    )
 
-        <div class="readora-subtitle">
-            Your Intelligent Book Recommendation Assistant
+else:
+
+    st.html(
+        f"""
+        <div class="readora-header">
+
+            <div class="readora-brand">
+
+                <div class="readora-logo-fallback">
+                    📚
+                </div>
+
+                <div class="readora-brand-text">
+
+                    <div class="readora-title">
+                        READORA
+                    </div>
+
+                    <div class="readora-tagline">
+                        Your Intelligent Book Assistant
+                    </div>
+
+                </div>
+
+            </div>
+
         </div>
-
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+        """
+    )
 
 
 # ============================================================
-# 14. WELCOME MESSAGE
+# 15. WELCOME
 # ============================================================
 
 if not st.session_state.messages:
 
-    with st.chat_message(
-        "assistant",
-        avatar="📚"
-    ):
+    st.html(
+        f"""
+        <div class="welcome-card">
 
-        st.markdown(
-            """
-            **Welcome to READORA! 👋**
+            <div class="welcome-title">
+                Welcome to READORA 👋
+            </div>
 
-            Tell me what kind of book you're looking for.
+            <div class="welcome-text">
+                Tell me what kind of book you're looking for,
+                and I'll help you discover something you'll love.
+            </div>
 
-            **Examples:**
-
-            > I want a fantasy book involving magic.
-
-            > Recommend a mystery novel involving murder.
-
-            > I want a romantic story about relationships.
-            """
-        )
+        </div>
+        """
+    )
 
 
 # ============================================================
-# 15. DISPLAY CHAT HISTORY
+# 16. CHAT HISTORY
 # ============================================================
 
 for message in st.session_state.messages:
 
+    avatar = (
+        "📚"
+        if message["role"] == "assistant"
+        else "👤"
+    )
+
     with st.chat_message(
         message["role"],
-        avatar=(
-            "📚"
-            if message["role"] == "assistant"
-            else "👤"
-        )
+        avatar=avatar
     ):
 
         st.markdown(
@@ -725,26 +1011,21 @@ for message in st.session_state.messages:
 
 
 # ============================================================
-# 16. CHAT INPUT
+# 17. CHAT INPUT
 # ============================================================
 
 user_query = st.chat_input(
-    "What kind of book are you looking for?"
+    "Ask READORA what you'd like to read..."
 )
 
 
 # ============================================================
-# 17. HANDLE USER INPUT
+# 18. HANDLE USER MESSAGE
 # ============================================================
 
 if user_query:
 
     user_query = user_query.strip()
-
-
-    # --------------------------------------------------------
-    # Save user message
-    # --------------------------------------------------------
 
     st.session_state.messages.append(
         {
@@ -752,11 +1033,6 @@ if user_query:
             "content": user_query
         }
     )
-
-
-    # --------------------------------------------------------
-    # Display user message
-    # --------------------------------------------------------
 
     with st.chat_message(
         "user",
@@ -767,58 +1043,39 @@ if user_query:
             user_query
         )
 
-
-    # ========================================================
-    # STEP 1: INTENT CLASSIFICATION
-    # ========================================================
-
     with st.chat_message(
         "assistant",
         avatar="📚"
     ):
 
-        with st.spinner(
-            "Understanding your request..."
-        ):
+        try:
 
-            try:
+            with st.spinner(
+                "Understanding your request..."
+            ):
 
                 intent = classify_intent(
                     user_query
                 )
 
-            except Exception as e:
-
-                print(
-                    f"Intent classification failed: {e}"
-                )
-
-                # Safe fallback:
-                # If intent classification fails,
-                # treat it as a book request.
-                intent = "book_recommendation"
+            print(
+                f"Detected intent: {intent}"
+            )
 
 
-        print(
-            f"Detected intent: {intent}"
-        )
+            # =================================================
+            # NON-BOOK MESSAGE
+            # =================================================
 
+            if intent in {
+                "greeting",
+                "general_conversation",
+                "other"
+            }:
 
-        # ====================================================
-        # STEP 2: NON-BOOK INTENTS
-        # ====================================================
-
-        if intent in {
-            "greeting",
-            "general_conversation",
-            "other"
-        }:
-
-            with st.spinner(
-                "Preparing a response..."
-            ):
-
-                try:
+                with st.spinner(
+                    "Preparing your response..."
+                ):
 
                     answer = (
                         generate_non_retrieval_response(
@@ -827,82 +1084,71 @@ if user_query:
                         )
                     )
 
-                except Exception as e:
-
-                    print(
-                        f"Response generation failed: "
-                        f"{e}"
-                    )
-
-                    answer = (
-                        "Hello! 👋 I'm READORA. "
-                        "Tell me what kind of book "
-                        "you're looking for."
-                    )
+                st.markdown(
+                    answer
+                )
 
 
-            st.markdown(
-                answer
-            )
+            # =================================================
+            # BOOK REQUEST
+            # =================================================
 
+            else:
 
-        # ====================================================
-        # STEP 3: BOOK-RELATED INTENTS
-        # ====================================================
-
-        else:
-
-            with st.spinner(
-                "Finding the best books for you..."
-            ):
-
-                try:
+                with st.spinner(
+                    "Finding books for you..."
+                ):
 
                     result = rag_query(
                         user_query,
                         top_k=5
                     )
 
-                    answer = result.get(
-                        "answer",
-                        ""
+                answer = result.get(
+                    "answer",
+                    ""
+                )
+
+                books = result.get(
+                    "books",
+                    []
+                )
+
+                if answer:
+
+                    st.markdown(
+                        answer
                     )
 
-                    books = result.get(
-                        "books",
-                        []
+                if books:
+
+                    st.markdown(
+                        """
+                        <div class="recommendation-title">
+                            📚 Recommended Books
+                        </div>
+                        """,
+                        unsafe_allow_html=True
                     )
 
+                    # Three books per row
+                    for start in range(
+                        0,
+                        len(books),
+                        3
+                    ):
 
-                    # ------------------------------------------------
-                    # Final assistant answer
-                    # ------------------------------------------------
-
-                    if answer:
-
-                        st.markdown(
-                            answer
-                        )
-
-
-                    # ------------------------------------------------
-                    # Book cards
-                    # ------------------------------------------------
-
-                    if books:
-
-                        st.markdown(
-                            "### 📚 Recommended Books"
-                        )
+                        row_books = books[
+                            start:start + 3
+                        ]
 
                         columns = st.columns(
-                            len(books)
+                            len(row_books)
                         )
-
 
                         for column, book in zip(
                             columns,
-                            books
+                            row_books
                         ):
 
                             with column:
@@ -911,33 +1157,30 @@ if user_query:
                                     book
                                 )
 
-                    else:
+                else:
 
-                        st.info(
-                            "I couldn't find "
-                            "suitable books."
-                        )
-
-
-                except Exception as e:
-
-                    print(
-                        f"RAG Error: {e}"
-                    )
-
-                    answer = (
-                        "Sorry, I couldn't process "
-                        "your request right now."
-                    )
-
-                    st.error(
-                        f"RAG Error: {e}"
+                    st.info(
+                        "I couldn't find suitable "
+                        "books for this request."
                     )
 
 
-        # --------------------------------------------------------
-        # Save assistant response
-        # --------------------------------------------------------
+        except Exception as e:
+
+            print(
+                f"Application error: {e}"
+            )
+
+            answer = (
+                "Sorry, I couldn't process "
+                "your request right now."
+            )
+
+            st.error(
+                "Something went wrong while "
+                "processing your request."
+            )
+
 
         st.session_state.messages.append(
             {
